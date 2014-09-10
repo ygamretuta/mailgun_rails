@@ -3,6 +3,6 @@ module Mail
     attr_accessor :mailgun_variables
     attr_accessor :mailgun_recipient_variables
     attr_accessor :mailgun_headers
-    attr_accessor :mailgun_message_id
+    attr_accessor :mailgun_api_response
   end
 end
