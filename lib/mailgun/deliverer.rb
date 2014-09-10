@@ -37,6 +37,7 @@ module Mailgun
       transform_mailgun_variables rails_message, mailgun_message
       transform_mailgun_recipient_variables rails_message, mailgun_message
       transform_custom_headers rails_message, mailgun_message
+      transform_mailgun_special_variables rails_message, mailgun_message
     end
 
     def build_basic_mailgun_message_for(rails_message)
@@ -79,6 +80,12 @@ module Mailgun
 
     def transform_mailgun_recipient_variables(rails_message, mailgun_message)
       mailgun_message['recipient-variables'] = rails_message.mailgun_recipient_variables.to_json if rails_message.mailgun_recipient_variables
+    end
+
+    def transform_mailgun_special_variables(rails_message, mailgun_message)
+      rails_message.mailgun_special_variables.try(:each) do |name, value|
+        mailgun_message["o:#{name}"] = value
+      end
     end
 
     def remove_empty_values(mailgun_message)
