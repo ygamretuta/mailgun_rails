@@ -22,6 +22,10 @@ describe Mailgun::Deliverer do
       check_mailgun_message message_with_mailgun_variables, basic_expected_mailgun_message.merge('v:foo' => 'bar')
     end
 
+    it 'should invoke mailgun message transforming the mailgun options' do
+      check_mailgun_message message_with_mailgun_options, basic_expected_mailgun_message.merge('o:foo' => 'bar')
+    end
+
     it 'should invoke mailgun message transforming the custom headers' do
       check_mailgun_message message_with_custom_headers, basic_expected_mailgun_message.merge('h:foo' => 'bar')
     end
@@ -42,9 +46,90 @@ describe Mailgun::Deliverer do
       check_mailgun_message text_rails_message_with_names, basic_expected_mailgun_message.except(:html).merge(emails_with_names)
     end
 
+    it "should include cc if present" do
+      msg = Mail::Message.new(to: 'to@email.com',
+                              from: 'from@email.com',
+                              cc: 'cc@email.com')
+      expectation = { to: ['to@email.com'],
+                      from: ['from@email.com'],
+                      cc: ['cc@email.com'] }
+      check_mailgun_message msg, expectation
+
+    end
+
+    it "should include bcc if present" do
+      msg = Mail::Message.new(to: 'to@email.com',
+                              from: 'from@email.com',
+                              bcc: 'bcc@email.com')
+      expectation = { to: ['to@email.com'],
+                      from: ['from@email.com'],
+                      bcc: ['bcc@email.com'] }
+      check_mailgun_message msg, expectation
+
+    end
+
+    it 'should include reply-to name in custom header' do
+      msg = Mail::Message.new(to: 'to@email.com',
+                              from: 'from@email.com',
+                              reply_to: 'Reply User <replyto@email.com>')
+      expectation = { to: ['to@email.com'],
+                      from: ['from@email.com'],
+                      'h:Reply-To' => 'Reply User <replyto@email.com>' }
+      check_mailgun_message msg, expectation
+    end
+
+
+    it 'should include attachment' do
+      rails_message = rails_message_with_attachment
+      attachment = double(Mailgun::Attachment)
+      Mailgun::Attachment.stub(:new).with(rails_message.attachments.first, encoding: 'ascii-8bit').and_return attachment
+      expectation = basic_expected_mailgun_message.merge({inline: []})
+      expectation[:attachment] = [attachment]
+      check_mailgun_message rails_message, expectation
+    end
+
+    it 'should include inline attachment' do
+      rails_message = rails_message_with_inline_attachment
+      attachment = double(Mailgun::Attachment)
+      Mailgun::Attachment.stub(:new).with(rails_message.attachments.first, encoding: 'ascii-8bit', inline: true).and_return attachment
+      expectation = basic_expected_mailgun_message.merge({attachment: []})
+      expectation[:inline] = [attachment]
+      check_mailgun_message rails_message, expectation
+    end
+
+    it 'should include attachment of both types' do
+      rails_message = rails_message_with_both_types_attachments
+      attachment = double(Mailgun::Attachment)
+      Mailgun::Attachment.stub(:new).with(rails_message.attachments.first, encoding: 'ascii-8bit', inline: true).and_return attachment
+      Mailgun::Attachment.stub(:new).with(rails_message.attachments.last, encoding: 'ascii-8bit').and_return attachment
+      expectation = basic_expected_mailgun_message
+      expectation[:inline] = [attachment]
+      expectation[:attachment] = [attachment]
+      check_mailgun_message rails_message, expectation
+    end
+
     def check_mailgun_message(rails_message, mailgun_message)
       mailgun_client.should_receive(:send_message).with(mailgun_message)
       Mailgun::Deliverer.new(api_key: api_key, domain: domain).deliver!(rails_message)
+    end
+
+    def rails_message_with_attachment
+      msg = basic_multipart_rails_message
+      msg.attachments["attachment.jpg"] = "\312\213\254\232"
+      msg
+    end
+
+    def rails_message_with_inline_attachment
+      msg = basic_multipart_rails_message
+      msg.attachments.inline["attachment.jpg"] = "\312\213\254\232"
+      msg
+    end
+
+    def rails_message_with_both_types_attachments
+      msg = basic_multipart_rails_message
+      msg.attachments.inline["attachment.jpg"] = "\312\213\254\232"
+      msg.attachments["attachment.png"] = "\312\213\254\232"
+      msg
     end
 
     def basic_multipart_rails_message
@@ -86,6 +171,12 @@ describe Mailgun::Deliverer do
       message
     end
 
+    def message_with_mailgun_options
+      message = basic_multipart_rails_message
+      message.mailgun_options = {foo: 'bar'}
+      message
+    end
+
     def message_with_custom_headers
       message = basic_multipart_rails_message
       message.mailgun_headers = {foo: 'bar'}
@@ -117,6 +208,4 @@ describe Mailgun::Deliverer do
   def text_body
     'the text content'
   end
-
-
 end

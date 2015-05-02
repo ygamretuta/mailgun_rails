@@ -1,6 +1,20 @@
 language: ruby
+sudo: false
+cache: bundler
 rvm:
-  - 1.9.3
-  - 2.0.0
-  
- 
+  - 1.9
+  - 2.0
+  - 2.1
+  - 2.2
+  - jruby
+  - rbx
+matrix:
+  include:
+    - rvm: 2.2
+      gemfile: .gemfiles/rails3_2.gemfile
+    - rvm: 2.2
+      gemfile: .gemfiles/rails4_0.gemfile
+    - rvm: 2.2
+      gemfile: .gemfiles/rails4_1.gemfile
+  allow_failures:
+    - rvm: rbx

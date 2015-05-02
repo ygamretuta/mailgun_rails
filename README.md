@@ -1,5 +1,7 @@
 # mailgun_rails
 
+[![Build Status](https://travis-ci.org/jorgemanrubia/mailgun_rails.svg?branch=master)](https://travis-ci.org/jorgemanrubia/mailgun_rails)
+
 *mailgun_rails* is an Action Mailer adapter for using [Mailgun](http://www.mailgun.com/) in Rails apps. It uses the [Mailgun HTTP API](http://documentation.mailgun.com/api_reference.html) internally.
 
 ## Installing
@@ -45,9 +47,14 @@ email.mailgun_recipient_variables = {'user_1@email.com' => {id: 1}, 'user_2@emai
 ```ruby
 email.mailgun_headers = {foo: 'bar'}
 ```
-## Pending
 
- - Sending attachments
+### Mailgun options
+
+To provide option parameters like `o:campaign` or `o:tag`.
+
+```ruby
+email.mailgun_options = {campaign: '1'}
+```
 
 Pull requests are welcomed
 
